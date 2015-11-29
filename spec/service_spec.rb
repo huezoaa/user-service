@@ -21,6 +21,9 @@ describe "service" do
     User.delete_all
   end
 
+  puts "The File.dirname(__FILE__) is: #{File.dirname(__FILE__)}"
+  puts "And the /../service is #{'/../service'}"
+
   describe "GET on /api/v1/users/:id" do
     before(:each) do
       User.create(
@@ -62,6 +65,31 @@ describe "service" do
         get '/api/v1/users/foo'
         last_response.status.should == 404
       end
+    end # end of GET describe
+
+  describe "POST on /api/v1/users" do
+    it "should create a user" do
+      hash = {
+        name: "trotter",
+        email: "no spam",
+        password: "whatever",
+        bio: "southern belle"
+      }
+
+      post '/api/v1/users', hash.to_json
+      # turn hash to json before transmitting, otherwise the params
+      # messes up the query string...
+      # will have to JSON.parse it at the service.rb
+      last_response.should be_ok
+
+      get '/api/v1/users/trotter'
+      attributes = JSON.parse(last_response.body)
+      attributes["name"].should == "trotter"
+      attributes["email"].should == "no spam"
+      attributes["bio"].should == "southern belle"
     end
+  end # end of POST describe
+
+
   end
 

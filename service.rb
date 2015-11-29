@@ -28,4 +28,24 @@ get '/api/v1/users/:name' do
   else
     error 404, {error: 'user not found'}.to_json
   end
-end
+end # end of 'get' implementation
+
+# create a new user:
+
+post '/api/v1/users' do
+  begin
+    hash = (JSON.parse(request.body.read))
+    # Sinatra exposes a request object StringIO that needs be read in
+    puts "hash = #{hash}"
+    user = User.create(hash)
+
+    if user.valid?
+      user.to_json
+    else
+      error 400, user.errors.to_json
+    end # end of if
+  rescue => e
+    puts "had to get rescued"
+    error 400, {:error => e.message}.to_json
+  end # end of rescue
+end # end of post implementation
