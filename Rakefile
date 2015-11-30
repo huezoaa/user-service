@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'active_record'
 require 'yaml'
+require 'logger'
 
 desc "Load the environment"
 task :environment do
@@ -10,7 +11,7 @@ task :environment do
 end
 
 namespace :db do
-  desc "Migrate the databse"
+  desc "Migrate the database"
   task(:migrate => :environment) do
     ActiveRecord::Base.logger = Logger.new(STDOUT)
     ActiveRecord::Migration.verbose = true
