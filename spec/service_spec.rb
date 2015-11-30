@@ -10,6 +10,12 @@ RSpec.configure do |conf|
   conf.include Rack::Test::Methods
 end
 
+RSpec.configure do |config|
+  config.expect_with(:rspec) do |c|
+    c.syntax = :should
+  end
+end
+
 def app
   Sinatra::Application
 end
@@ -21,8 +27,8 @@ describe "service" do
     User.delete_all
   end
 
-  puts "The File.dirname(__FILE__) is: #{File.dirname(__FILE__)}"
-  puts "And the /../service is #{'/../service'}"
+  # puts "The File.dirname(__FILE__) is: #{File.dirname(__FILE__)}"
+  # puts "And the /../service is #{'/../service'}"
 
   describe "GET on /api/v1/users/:id" do
     before(:each) do
@@ -36,6 +42,7 @@ describe "service" do
       it "should return a user by name" do
         get '/api/v1/users/paul'
         last_response.should be_ok
+        #last_response.body is a JSON
         attributes = JSON.parse(last_response.body)
         attributes["name"].should == "paul"
       end
@@ -67,29 +74,100 @@ describe "service" do
       end
     end # end of GET describe
 
-  describe "POST on /api/v1/users" do
+  describe "POST on /api/v1/users" do # creating a user
     it "should create a user" do
-      hash = {
-        name: "trotter",
-        email: "no spam",
-        password: "whatever",
-        bio: "southern belle"
-      }
+        hash = {
+          name: "trotter",
+          email: "no spam",
+          password: "whatever",
+          bio: "southern belle"
+        }
 
-      post '/api/v1/users', hash.to_json
-      # turn hash to json before transmitting, otherwise the params
-      # messes up the query string...
-      # will have to JSON.parse it at the service.rb
-      last_response.should be_ok
+        post '/api/v1/users', hash.to_json
+        # turn hash to json before transmitting, otherwise the params
+        # messes up the query string...
+        # will have to JSON.parse it at the service.rb
+        last_response.should be_ok
 
-      get '/api/v1/users/trotter'
-      attributes = JSON.parse(last_response.body)
-      attributes["name"].should == "trotter"
-      attributes["email"].should == "no spam"
-      attributes["bio"].should == "southern belle"
-    end
-  end # end of POST describe
+        get '/api/v1/users/trotter'
+        attributes = JSON.parse(last_response.body)
+        attributes["name"].should == "trotter"
+        attributes["email"].should == "no spam"
+        attributes["bio"].should == "southern belle"
+      end
+    end # end of POST describe
 
+  describe "PUT on /api.v1/users/:id"   do
+     it "should update a user" do
+        User.create(
+          name: "bryan",
+          email: "no spam",
+          password: "whatever",
+          bio: "rspec master"
+          )
+
+        hash = {bio: "testing freak"}
+        put '/api/v1/users/bryan', hash.to_json
+
+        last_response.should be_ok
+
+        get '/api/v1/users/bryan'
+        attributes = JSON.parse(last_response.body)
+        attributes["bio"].should == "testing freak"
+      end
+    end # end of PUT describe
+
+  describe "DELETE on /api/v1/users/:id" do
+      it "should delete a user" do
+        User.create(
+          name: "francis",
+          email: "no spam",
+          password: "whatever",
+          bio: "williamsburg hipster"
+          )
+
+        # AH: I added the next 4 lines.  Not in the book. unnecessary...
+        get '/api/v1/users/francis'
+        last_response.should be_ok
+        attributes = JSON.parse(last_response.body)
+        attributes["name"].should == "francis"
+        ############################################
+
+        delete '/api/v1/users/francis'
+        # the delete action only cares that the service response is a
+        # 200 error
+        get '/api/v1/users/francis'
+        last_response.status.should == 404
+      end
+  end # end of DELETE describe
+
+  describe "POST on /api/v1/users/:id/sessions" do #creating a session
+      before(:each) do
+        User.create(
+          name: "josh",
+          password: "nyc.rb rules",
+          email: "no email",
+          bio: "who cares"
+          )
+      end
+
+        it "should return the user object on valid credentials" do
+          hash = {password: "nyc.rb rules"}
+          post '/api/v1/users/josh/sessions', hash.to_json
+
+          last_response.should be_ok
+          attributes = JSON.parse(last_response.body)
+          attributes["name"].should == "josh"
+        end
+
+        it "should fail on invalid credentials" do
+          hash = {password: "wrong"}
+          post '/api/v1/users/josh/sessions', hash.to_json
+
+          last_response.status.should == 400
+        end
+
+  end # end of Verification describe
 
   end
 
